@@ -1,75 +1,268 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { JSX, useEffect, useRef, useState } from 'react';
+import {
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function HomeScreen(): JSX.Element {
+  const [time, setTime] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [laps, setLaps] = useState<number[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-export default function HomeScreen() {
+  useEffect(() => {
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setTime(prevTime => prevTime + 10);
+      }, 10);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning]);
+
+  const formatTime = (timeInMs: number): string => {
+    const minutes = Math.floor(timeInMs / 60000);
+    const seconds = Math.floor((timeInMs % 60000) / 1000);
+    const centiseconds = Math.floor((timeInMs % 1000) / 10);
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleStartStop = (): void => {
+    setIsRunning(!isRunning);
+  };
+
+  const handleReset = (): void => {
+    setTime(0);
+    setIsRunning(false);
+    setLaps([]);
+  };
+
+  const handleLap = (): void => {
+    if (isRunning) {
+      setLaps(prevLaps => [time, ...prevLaps]);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="#1a1a1a" 
+        translucent={false}
+      />
+      
+      {/* App Title */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Stopwatch</Text>
+      </View>
+      
+      {/* Main Timer Display */}
+      <View style={styles.timerContainer}>
+        <Text style={styles.timerText}>{formatTime(time)}</Text>
+      </View>
+
+      {/* Control Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.resetButton]}
+          onPress={handleReset}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>Reset</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.startStopButton,
+            isRunning ? styles.stopButton : styles.startButton,
+          ]}
+          onPress={handleStartStop}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buttonText, styles.mainButtonText]}>
+            {isRunning ? 'Stop' : 'Start'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.lapButton,
+            !isRunning && styles.disabledButton,
+          ]}
+          onPress={handleLap}
+          disabled={!isRunning}
+          activeOpacity={isRunning ? 0.7 : 1}
+        >
+          <Text style={[styles.buttonText, !isRunning && styles.disabledText]}>
+            Lap
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Lap Times */}
+      {laps.length > 0 && (
+        <View style={styles.lapsContainer}>
+          <Text style={styles.lapsTitle}>Lap Times</Text>
+          <ScrollView style={styles.lapsList} showsVerticalScrollIndicator={false}>
+            {laps.map((lapTime: number, index: number) => (
+              <View key={index} style={styles.lapItem}>
+                <Text style={styles.lapNumber}>Lap {laps.length - index}</Text>
+                <Text style={styles.lapTime}>{formatTime(lapTime)}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  header: {
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#ffffff',
+    letterSpacing: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  timerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  timerText: {
+    fontSize: 56,
+    fontWeight: '300',
+    color: '#ffffff',
+    letterSpacing: -2,
+    textAlign: 'center',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 40,
+  },
+  button: {
+    width: 75,
+    height: 75,
+    borderRadius: 37.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  startButton: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#45a049',
+  },
+  stopButton: {
+    backgroundColor: '#f44336',
+    borderColor: '#da190b',
+  },
+  resetButton: {
+    backgroundColor: '#6c757d',
+    borderColor: '#5a6268',
+  },
+  lapButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#0056CC',
+  },
+  disabledButton: {
+    backgroundColor: '#333333',
+    borderColor: '#666666',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  startStopButton: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  mainButtonText: {
+    fontSize: 16,
+  },
+  disabledText: {
+    color: '#999999',
+  },
+  lapsContainer: {
+    flex: 1,
+    maxHeight: 250,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  lapsTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  lapsList: {
+    flex: 1,
+  },
+  lapItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginVertical: 2,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  lapNumber: {
+    color: '#cccccc',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  lapTime: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '400',
   },
 });
