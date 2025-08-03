@@ -1,8 +1,6 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -21,77 +19,103 @@ export default function TabTwoScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
+        <ThemedText type="title">About BMI</ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
+      <ThemedText>Learn more about Body Mass Index and how it's calculated.</ThemedText>
+      
+      <Collapsible title="What is BMI?">
         <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
+          Body Mass Index (BMI) is a simple calculation using a person's height and weight. 
+          The formula is BMI = kg/m² where kg is a person's weight in kilograms and m² is their height in metres squared.
         </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
+        <ThemedText style={styles.marginTop}>
+          BMI is a screening tool and is not intended to diagnose disease or illness.
         </ThemedText>
       </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
+
+      <Collapsible title="BMI Categories">
+        <ThemedView style={styles.categoryContainer}>
+          <ThemedText style={[styles.categoryText, { color: '#3498db' }]}>
+            <ThemedText type="defaultSemiBold">Underweight:</ThemedText> BMI less than 18.5
           </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
+          <ThemedText style={[styles.categoryText, { color: '#27ae60' }]}>
+            <ThemedText type="defaultSemiBold">Normal weight:</ThemedText> BMI 18.5-24.9
+          </ThemedText>
+          <ThemedText style={[styles.categoryText, { color: '#f39c12' }]}>
+            <ThemedText type="defaultSemiBold">Overweight:</ThemedText> BMI 25-29.9
+          </ThemedText>
+          <ThemedText style={[styles.categoryText, { color: '#e74c3c' }]}>
+            <ThemedText type="defaultSemiBold">Obese:</ThemedText> BMI 30 or greater
+          </ThemedText>
+        </ThemedView>
       </Collapsible>
-      <Collapsible title="Light and dark mode components">
+
+      <Collapsible title="How to Use the Calculator">
         <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
+          1. Enter your weight in kilograms in the first input field
         </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
+        <ThemedText style={styles.marginTop}>
+          2. Enter your height in centimeters in the second input field
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          3. Tap "Calculate BMI" to see your result
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          4. Use "Clear All" to reset all fields and start over
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          Your last calculation is automatically saved and will be restored when you reopen the app.
+        </ThemedText>
       </Collapsible>
-      <Collapsible title="Animations">
+
+      <Collapsible title="BMI Formula Explanation">
         <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
+          The BMI calculation uses the metric formula:
         </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
+        <ThemedText type="defaultSemiBold" style={styles.formula}>
+          BMI = Weight (kg) ÷ Height (m)²
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          Since you enter height in centimeters, the app automatically converts it to meters by dividing by 100 before performing the calculation.
+        </ThemedText>
       </Collapsible>
+
+      <Collapsible title="Important Notes">
+        <ThemedText>
+          • BMI is a screening tool, not a diagnostic tool
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • It doesn't account for muscle mass, bone density, or body composition
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • Consult with healthcare professionals for comprehensive health assessment
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • BMI categories may not apply equally to all populations
+        </ThemedText>
+      </Collapsible>
+
+      <Collapsible title="App Features">
+        <ThemedText>
+          • <ThemedText type="defaultSemiBold">Input Validation:</ThemedText> Ensures you enter realistic values for weight (20-500 kg) and height (50-300 cm)
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • <ThemedText type="defaultSemiBold">Data Persistence:</ThemedText> Your last calculation is saved and restored when you reopen the app
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • <ThemedText type="defaultSemiBold">Color-Coded Results:</ThemedText> Results are displayed with colors corresponding to BMI categories
+        </ThemedText>
+        <ThemedText style={styles.marginTop}>
+          • <ThemedText type="defaultSemiBold">Clear Function:</ThemedText> Easily reset all fields to start a new calculation
+        </ThemedText>
+      </Collapsible>
+
+      <ThemedView style={styles.footer}>
+        <ThemedText style={styles.footerText}>
+          This BMI Calculator was created as an educational project. 
+          Always consult healthcare professionals for medical advice.
+        </ThemedText>
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
@@ -106,5 +130,33 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+  marginTop: {
+    marginTop: 8,
+  },
+  categoryContainer: {
+    gap: 8,
+  },
+  categoryText: {
+    fontSize: 14,
+  },
+  formula: {
+    textAlign: 'center',
+    fontSize: 18,
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  footer: {
+    marginTop: 30,
+    padding: 20,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    opacity: 0.7,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
