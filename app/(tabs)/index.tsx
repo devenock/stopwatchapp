@@ -1,421 +1,268 @@
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { JSX, useEffect, useState } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
+  Platform,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
-  TextInput,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 
-// Type definitions
-interface BMIData {
-  bmi: number;
-  category: string;
-  weight: string;
-  height: string;
-  timestamp: string;
-}
-
-type BMICategory = 'Underweight' | 'Normal weight' | 'Overweight' | 'Obese' | '';
-
 export default function HomeScreen(): JSX.Element {
-  // State management for inputs and results
-  const [weight, setWeight] = useState<string>('');
-  const [height, setHeight] = useState<string>('');
-  const [bmi, setBmi] = useState<number | null>(null);
-  const [category, setCategory] = useState<BMICategory>('');
-  const [isCalculated, setIsCalculated] = useState<boolean>(false);
+  const [time, setTime] = useState<number>(0);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+  const [laps, setLaps] = useState<number[]>([]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load saved BMI data on app start
   useEffect(() => {
-    loadSavedData();
-  }, []);
-
-  // AsyncStorage functions
-  const saveBMIData = async (
-    bmiValue: number,
-    categoryValue: BMICategory,
-    weightValue: string,
-    heightValue: string
-  ): Promise<void> => {
-    try {
-      const data: BMIData = {
-        bmi: bmiValue,
-        category: categoryValue,
-        weight: weightValue,
-        height: heightValue,
-        timestamp: new Date().toISOString(),
-      };
-      await AsyncStorage.setItem('lastBMI', JSON.stringify(data));
-    } catch (error) {
-      console.log('Error saving data:', error);
-    }
-  };
-
-  const loadSavedData = async (): Promise<void> => {
-    try {
-      const savedData = await AsyncStorage.getItem('lastBMI');
-      if (savedData) {
-        const data: BMIData = JSON.parse(savedData);
-        setBmi(data.bmi);
-        setCategory(data.category as BMICategory);
-        setWeight(data.weight);
-        setHeight(data.height);
-        setIsCalculated(true);
-      }
-    } catch (error) {
-      console.log('Error loading data:', error);
-    }
-  };
-
-  // Input validation function
-  const validateInputs = (): boolean => {
-    if (!weight.trim() || !height.trim()) {
-      Alert.alert('Error', 'Please enter both weight and height');
-      return false;
-    }
-
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height);
-
-    if (isNaN(weightNum) || isNaN(heightNum)) {
-      Alert.alert('Error', 'Please enter valid numbers');
-      return false;
-    }
-
-    if (weightNum <= 0 || heightNum <= 0) {
-      Alert.alert('Error', 'Please enter positive numbers');
-      return false;
-    }
-
-    if (heightNum < 50 || heightNum > 300) {
-      Alert.alert('Error', 'Please enter a realistic height (50-300 cm)');
-      return false;
-    }
-
-    if (weightNum < 20 || weightNum > 500) {
-      Alert.alert('Error', 'Please enter a realistic weight (20-500 kg)');
-      return false;
-    }
-
-    return true;
-  };
-
-  // BMI calculation function
-  const calculateBMI = (): void => {
-    if (!validateInputs()) {
-      return;
-    }
-
-    const weightInKg = parseFloat(weight);
-    const heightInCm = parseFloat(height);
-    
-    // Convert height from cm to meters
-    const heightInMeters = heightInCm / 100;
-    
-    // Calculate BMI using the formula: BMI = weight(kg) / height(m)²
-    const bmiValue = weightInKg / (heightInMeters * heightInMeters);
-    
-    // Round to 2 decimal places
-    const roundedBMI = Math.round(bmiValue * 100) / 100;
-    
-    // Determine BMI category
-    let bmiCategory: BMICategory = '';
-    if (roundedBMI < 18.5) {
-      bmiCategory = 'Underweight';
-    } else if (roundedBMI >= 18.5 && roundedBMI <= 24.9) {
-      bmiCategory = 'Normal weight';
-    } else if (roundedBMI >= 25 && roundedBMI <= 29.9) {
-      bmiCategory = 'Overweight';
+    if (isRunning) {
+      intervalRef.current = setInterval(() => {
+        setTime(prevTime => prevTime + 10);
+      }, 10);
     } else {
-      bmiCategory = 'Obese';
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     }
 
-    // Update state
-    setBmi(roundedBMI);
-    setCategory(bmiCategory);
-    setIsCalculated(true);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning]);
 
-    // Save to AsyncStorage
-    saveBMIData(roundedBMI, bmiCategory, weight, height);
+  const formatTime = (timeInMs: number): string => {
+    const minutes = Math.floor(timeInMs / 60000);
+    const seconds = Math.floor((timeInMs % 60000) / 1000);
+    const centiseconds = Math.floor((timeInMs % 1000) / 10);
+    
+    return `${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
   };
 
-  // Clear all fields and results
-  const clearAll = (): void => {
-    setWeight('');
-    setHeight('');
-    setBmi(null);
-    setCategory('');
-    setIsCalculated(false);
+  const handleStartStop = (): void => {
+    setIsRunning(!isRunning);
   };
 
-  // Get color based on BMI category
-  const getCategoryColor = (): string => {
-    switch (category) {
-      case 'Underweight':
-        return '#3498db'; // Blue
-      case 'Normal weight':
-        return '#27ae60'; // Green
-      case 'Overweight':
-        return '#f39c12'; // Orange
-      case 'Obese':
-        return '#e74c3c'; // Red
-      default:
-        return '#34495e'; // Dark gray
+  const handleReset = (): void => {
+    setTime(0);
+    setIsRunning(false);
+    setLaps([]);
+  };
+
+  const handleLap = (): void => {
+    if (isRunning) {
+      setLaps(prevLaps => [time, ...prevLaps]);
     }
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
-      {/* Header */}
-      <ThemedView style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>BMI Calculator</ThemedText>
-        <ThemedText style={styles.headerSubtitle}>Body Mass Index Calculator</ThemedText>
-      </ThemedView>
+    <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="#1a1a1a" 
+        translucent={false}
+      />
+      
+      {/* App Title */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Stopwatch</Text>
+      </View>
+      
+      {/* Main Timer Display */}
+      <View style={styles.timerContainer}>
+        <Text style={styles.timerText}>{formatTime(time)}</Text>
+      </View>
 
-      {/* Input Section */}
-      <ThemedView style={styles.inputSection}>
-        <ThemedView style={styles.inputContainer}>
-          <ThemedText type="defaultSemiBold" style={styles.inputLabel}>Weight (kg)</ThemedText>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your weight"
-            placeholderTextColor="#95a5a6"
-            value={weight}
-            onChangeText={setWeight}
-            keyboardType="numeric"
-            returnKeyType="next"
-          />
-        </ThemedView>
-
-        <ThemedView style={styles.inputContainer}>
-          <ThemedText type="defaultSemiBold" style={styles.inputLabel}>Height (cm)</ThemedText>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Enter your height"
-            placeholderTextColor="#95a5a6"
-            value={height}
-            onChangeText={setHeight}
-            keyboardType="numeric"
-            returnKeyType="done"
-          />
-        </ThemedView>
-      </ThemedView>
-
-      {/* Buttons Section */}
-      <ThemedView style={styles.buttonSection}>
-        <TouchableOpacity style={styles.calculateButton} onPress={calculateBMI}>
-          <ThemedText style={styles.calculateButtonText}>Calculate BMI</ThemedText>
+      {/* Control Buttons */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.button, styles.resetButton]}
+          onPress={handleReset}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.buttonText}>Reset</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.clearButton} onPress={clearAll}>
-          <ThemedText style={styles.clearButtonText}>Clear All</ThemedText>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.startStopButton,
+            isRunning ? styles.stopButton : styles.startButton,
+          ]}
+          onPress={handleStartStop}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.buttonText, styles.mainButtonText]}>
+            {isRunning ? 'Stop' : 'Start'}
+          </Text>
         </TouchableOpacity>
-      </ThemedView>
 
-      {/* Results Section */}
-      {isCalculated && (
-        <ThemedView style={styles.resultsSection}>
-          <ThemedText type="title" style={styles.resultsTitle}>Your BMI Result</ThemedText>
-          
-          <ThemedView style={styles.bmiContainer}>
-            <ThemedText style={styles.bmiValue}>{bmi}</ThemedText>
-            <ThemedText style={[styles.bmiCategory, { color: getCategoryColor() }]}>
-              {category}
-            </ThemedText>
-          </ThemedView>
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.lapButton,
+            !isRunning && styles.disabledButton,
+          ]}
+          onPress={handleLap}
+          disabled={!isRunning}
+          activeOpacity={isRunning ? 0.7 : 1}
+        >
+          <Text style={[styles.buttonText, !isRunning && styles.disabledText]}>
+            Lap
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-          {/* BMI Scale Reference */}
-          <ThemedView style={styles.scaleContainer}>
-            <ThemedText type="defaultSemiBold" style={styles.scaleTitle}>BMI Scale:</ThemedText>
-            <ThemedView style={styles.scaleItem}>
-              <ThemedText style={[styles.scaleText, { color: '#3498db' }]}>
-                • Below 18.5: Underweight
-              </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.scaleItem}>
-              <ThemedText style={[styles.scaleText, { color: '#27ae60' }]}>
-                • 18.5 - 24.9: Normal weight
-              </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.scaleItem}>
-              <ThemedText style={[styles.scaleText, { color: '#f39c12' }]}>
-                • 25.0 - 29.9: Overweight
-              </ThemedText>
-            </ThemedView>
-            <ThemedView style={styles.scaleItem}>
-              <ThemedText style={[styles.scaleText, { color: '#e74c3c' }]}>
-                • 30.0 and above: Obese
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-        </ThemedView>
+      {/* Lap Times */}
+      {laps.length > 0 && (
+        <View style={styles.lapsContainer}>
+          <Text style={styles.lapsTitle}>Lap Times</Text>
+          <ScrollView style={styles.lapsList} showsVerticalScrollIndicator={false}>
+            {laps.map((lapTime: number, index: number) => (
+              <View key={index} style={styles.lapItem}>
+                <Text style={styles.lapNumber}>Lap {laps.length - index}</Text>
+                <Text style={styles.lapTime}>{formatTime(lapTime)}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
       )}
-
-      {/* Footer */}
-      <ThemedView style={styles.footer}>
-        <ThemedText style={styles.footerText}>
-          BMI is a screening tool and not a diagnostic tool
-        </ThemedText>
-      </ThemedView>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollContainer: {
-    padding: 20,
-    paddingTop: 60,
+    backgroundColor: '#1a1a1a',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
     paddingVertical: 20,
-    borderRadius: 15,
   },
-  headerTitle: {
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    opacity: 0.7,
-  },
-  inputSection: {
-    marginBottom: 30,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 2,
-    borderColor: '#bdc3c7',
-    borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  buttonSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 30,
-    gap: 15,
-  },
-  calculateButton: {
-    flex: 1,
-    backgroundColor: '#27ae60',
-    paddingVertical: 15,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  calculateButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  clearButton: {
-    flex: 1,
-    backgroundColor: '#e74c3c',
-    paddingVertical: 15,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  clearButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  resultsSection: {
-    borderRadius: 15,
-    padding: 25,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
-  },
-  resultsTitle: {
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  bmiContainer: {
-    alignItems: 'center',
-    marginBottom: 25,
-    paddingVertical: 20,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-  },
-  bmiValue: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  bmiCategory: {
+  title: {
     fontSize: 24,
     fontWeight: '600',
-    textTransform: 'uppercase',
+    color: '#ffffff',
     letterSpacing: 1,
   },
-  scaleContainer: {
-    marginTop: 10,
+  timerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  scaleTitle: {
-    fontSize: 18,
-    marginBottom: 10,
+  timerText: {
+    fontSize: 56,
+    fontWeight: '300',
+    color: '#ffffff',
+    letterSpacing: -2,
+    textAlign: 'center',
   },
-  scaleItem: {
-    marginBottom: 5,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 40,
   },
-  scaleText: {
+  button: {
+    width: 75,
+    height: 75,
+    borderRadius: 37.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  startButton: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#45a049',
+  },
+  stopButton: {
+    backgroundColor: '#f44336',
+    borderColor: '#da190b',
+  },
+  resetButton: {
+    backgroundColor: '#6c757d',
+    borderColor: '#5a6268',
+  },
+  lapButton: {
+    backgroundColor: '#007AFF',
+    borderColor: '#0056CC',
+  },
+  disabledButton: {
+    backgroundColor: '#333333',
+    borderColor: '#666666',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  startStopButton: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    elevation: 5,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+  },
+  buttonText: {
+    color: '#ffffff',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  mainButtonText: {
+    fontSize: 16,
+  },
+  disabledText: {
+    color: '#999999',
+  },
+  lapsContainer: {
+    flex: 1,
+    maxHeight: 250,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  lapsTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  lapsList: {
+    flex: 1,
+  },
+  lapItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginVertical: 2,
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  lapNumber: {
+    color: '#cccccc',
+    fontSize: 16,
     fontWeight: '500',
   },
-  footer: {
-    alignItems: 'center',
-    marginTop: 20,
-    padding: 15,
-  },
-  footerText: {
-    fontSize: 12,
-    opacity: 0.7,
-    textAlign: 'center',
-    fontStyle: 'italic',
+  lapTime: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '400',
   },
 });
